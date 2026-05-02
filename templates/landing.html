@@ -90,6 +90,14 @@
     </div>
 </section>
 
+<!-- Modal for "See how it works" -->
+<div id="how-it-works-modal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:1000;">
+  <div class="modal-content" style="position:relative; background:#fff; padding:1rem; max-width:800px; width:90%; border-radius:8px;">
+    <button id="close-modal" style="position:absolute; top:0.5rem; right:0.5rem; background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+    <iframe id="how-it-works-video" width="100%" height="450" src="https://www.youtube.com/embed/dQw4w9WgXcQ?enablejsapi=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+  </div>
+</div>
+
 <section class="features">
     <div class="features-inner">
         <div class="feature-card">
@@ -118,4 +126,37 @@
     </div>
 </section>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var openBtn = document.querySelector('.hero-actions .btn-ghost');
+  var modal = document.getElementById('how-it-works-modal');
+  var closeBtn = document.getElementById('close-modal');
+  var iframe = document.getElementById('how-it-works-video');
+
+  if (openBtn && modal && closeBtn && iframe) {
+    openBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      modal.style.display = 'flex';
+    });
+
+    function closeModal() {
+      modal.style.display = 'none';
+      // Stop video by resetting src
+      var src = iframe.src;
+      iframe.src = '';
+      iframe.src = src;
+    }
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+  }
+});
+</script>
 {% endblock %}
