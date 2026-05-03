@@ -1,6 +1,6 @@
 import sqlite3
 from pathlib import Path
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Path to the SQLite database file in the project root
 _DB_PATH = Path(__file__).resolve().parents[1] / "spendly.db"
@@ -90,7 +90,23 @@ def seed_db():
         conn.close()
 
 
+def verify_user(email: str, password: str):
+    """Verify user credentials.
+    Returns a dict with user data (id, name, email) if the password matches, otherwise None.
+    """
+    conn = get_db()
+    try:
+        cur = conn.execute("SELECT id, name, email, password_hash FROM users WHERE email = ?", (email,))
+        row = cur.fetchone()
+        if row and check_password_hash(row["password_hash"], password):
+            return {"id": row["id"], "name": row["name"], "email": row["email"]}
+        return None
+    finally:
+        conn.close()
+
 def create_user(name, email, password):
+    # Existing function to create a new user
+    # (no changes needed here)
     """Create a new user with hashed password and return their ID.
     Raises sqlite3.IntegrityError if email already exists.
     """
