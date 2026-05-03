@@ -1,7 +1,9 @@
-from flask import Flask, render_template
-from database.db import init_db, seed_db
+from flask import Flask, render_template, request, redirect, url_for, flash, abort
+import sqlite3
+from database.db import init_db, seed_db, create_user
 
 app = Flask(__name__)
+app.secret_key = "dev-secret-key-change-in-production"
 
 # Initialize database on startup
 with app.app_context():
@@ -18,9 +20,34 @@ def landing():
     return render_template("landing.html")
 
 
-@app.route("/register")
+@app.route("/register", methods=["GET", "POST"])
 def register():
-    return render_template("register.html")
+    if request.method == "GET":
+        return render_template("register.html")
+    elif request.method == "POST":
+        # Ensure tables exist (re‑initialize if DB missing)
+        init_db()
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        # Validation
+        if not all([name, email, password, confirm_password]):
+            flash("All fields are required.", "error")
+            return render_template("register.html")
+        if password != confirm_password:
+            flash("Passwords do not match.", "error")
+            return render_template("register.html")
+        try:
+            user_id = create_user(name, email, password)
+            flash("Registration successful! Please log in.", "success")
+            return redirect(url_for("login"))
+        except sqlite3.IntegrityError:
+            flash("Email already registered.", "error")
+            return render_template("register.html")
+    else:
+        abort(405)
 
 
 @app.route("/login")
