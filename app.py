@@ -1,6 +1,12 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, abort, session
 import sqlite3
 from database.db import init_db, seed_db, create_user, verify_user
+from database.queries import (
+    get_user_by_id,
+    get_summary_stats,
+    get_recent_transactions,
+    get_category_breakdown,
+)
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-key-change-in-production"
