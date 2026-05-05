@@ -28,15 +28,22 @@ def get_user_by_id(user_id):
         conn.close()
 
 
-def get_summary_stats(user_id):
+def get_summary_stats(user_id, date_from=None, date_to=None):
     """Return dict with total_spent, transaction_count, top_category.
     If user has no expenses: total_spent=0, transaction_count=0, top_category='—'."""
     conn = get_db()
     try:
+        # Build base filter
+        base_where = "WHERE user_id = ?"
+        params = [user_id]
+        if date_from and date_to:
+            base_where += " AND date BETWEEN ? AND ?"
+            params.extend([date_from, date_to])
+
         # Get total spent and count
         cur = conn.execute(
-            "SELECT SUM(amount) AS total, COUNT(*) AS cnt FROM expenses WHERE user_id = ?",
-            (user_id,)
+            f"SELECT SUM(amount) AS total, COUNT(*) AS cnt FROM expenses {base_where}",
+            tuple(params)
         )
         row = cur.fetchone()
         total_spent = row["total"] if row["total"] is not None else 0.0
@@ -45,10 +52,9 @@ def get_summary_stats(user_id):
         if transaction_count == 0:
             top_category = "—"
         else:
-            cur = conn.execute(
-                "SELECT category, SUM(amount) AS cat_total FROM expenses WHERE user_id = ? GROUP BY category ORDER BY cat_total DESC LIMIT 1",
-                (user_id,)
-            )
+            # Top category with same filter
+            cat_query = f"SELECT category, SUM(amount) AS cat_total FROM expenses {base_where} GROUP BY category ORDER BY cat_total DESC LIMIT 1"
+            cur = conn.execute(cat_query, tuple(params))
             row = cur.fetchone()
             top_category = row["category"] if row else "—"
 
@@ -61,15 +67,20 @@ def get_summary_stats(user_id):
         conn.close()
 
 
-def get_recent_transactions(user_id, limit=10):
+def get_recent_transactions(user_id, limit=10, date_from=None, date_to=None):
     """Return list of dicts with date, description, category, amount (newest first).
-    Each dict has keys: date, description, category, amount."""
+    Each dict has keys: date, description, category, amount.
+    Optional date_from/date_to filter the results."""
     conn = get_db()
     try:
-        cur = conn.execute(
-            "SELECT date, description, category, amount FROM expenses WHERE user_id = ? ORDER BY date DESC LIMIT ?",
-            (user_id, limit)
-        )
+        base_where = "WHERE user_id = ?"
+        params = [user_id]
+        if date_from and date_to:
+            base_where += " AND date BETWEEN ? AND ?"
+            params.extend([date_from, date_to])
+        query = f"SELECT date, description, category, amount FROM expenses {base_where} ORDER BY date DESC LIMIT ?"
+        params.append(limit)
+        cur = conn.execute(query, tuple(params))
         rows = cur.fetchall()
         return [
             {
@@ -84,26 +95,30 @@ def get_recent_transactions(user_id, limit=10):
         conn.close()
 
 
-def get_category_breakdown(user_id):
+def get_category_breakdown(user_id, date_from=None, date_to=None):
     """Return list of dicts with name, amount, pct (int, sums to 100).
     Ordered by amount desc. If user has no expenses, returns empty list.
     The pct values are integers that sum to 100; the category with the largest
     raw remainder absorbs any rounding delta."""
     conn = get_db()
     try:
+        base_where = "WHERE user_id = ?"
+        params = [user_id]
+        if date_from and date_to:
+            base_where += " AND date BETWEEN ? AND ?"
+            params.extend([date_from, date_to])
+
         cur = conn.execute(
-            "SELECT category, SUM(amount) AS total FROM expenses WHERE user_id = ? GROUP BY category ORDER BY total DESC",
-            (user_id,)
+            f"SELECT category, SUM(amount) AS total FROM expenses {base_where} GROUP BY category ORDER BY total DESC",
+            tuple(params)
         )
         rows = cur.fetchall()
         if not rows:
             return []
 
-        # Overall total spent for the user
-        cur_total = conn.execute(
-            "SELECT SUM(amount) AS total FROM expenses WHERE user_id = ?",
-            (user_id,)
-        )
+        # Overall total spent for the user with same filter
+        total_query = f"SELECT SUM(amount) AS total FROM expenses {base_where}"
+        cur_total = conn.execute(total_query, tuple(params))
         overall_total = cur_total.fetchone()["total"]
         if overall_total is None or overall_total == 0:
             return []

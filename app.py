@@ -7,6 +7,7 @@ from database.queries import (
     get_recent_transactions,
     get_category_breakdown,
 )
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-key-change-in-production"
@@ -101,38 +102,70 @@ def logout():
     return redirect(url_for("landing"))
 
 
+
+
 @app.route("/profile")
 def profile():
     if not session.get('user_id'):
         return redirect(url_for('login'))
-    # Hardcoded data for profile page design (Step 4)
-    user = {
-        'name': 'John Doe',
-        'email': 'john@example.com',
-        'member_since': '2025-01-15'
-    }
-    summary_stats = {
-        'total_spent': 1250.75,
-        'transaction_count': 24,
-        'top_category': 'Food'
-    }
-    transactions = [
-        {'date': '2026-04-28', 'description': 'Grocery shopping', 'category': 'Food', 'amount': 85.50},
-        {'date': '2026-04-27', 'description': 'Taxi ride', 'category': 'Transport', 'amount': 25.00},
-        {'date': '2026-04-26', 'description': 'Electricity bill', 'category': 'Bills', 'amount': 120.00},
-    ]
-    category_breakdown = [
-        {'name': 'Food', 'total': 450.25, 'percent': 36},
-        {'name': 'Transport', 'total': 300.50, 'percent': 24},
-        {'name': 'Bills', 'total': 250.00, 'percent': 20},
-        {'name': 'Health', 'total': 150.00, 'percent': 12},
-        {'name': 'Other', 'total': 100.00, 'percent': 8},
-    ]
+
+    # Date filter handling
+    date_from = request.args.get('date_from', '').strip()
+    date_to = request.args.get('date_to', '').strip()
+
+    # Validate dates
+    validated_from = None
+    validated_to = None
+
+    try:
+        if date_from:
+            datetime.strptime(date_from, '%Y-%m-%d')
+            validated_from = date_from
+        if date_to:
+            datetime.strptime(date_to, '%Y-%m-%d')
+            validated_to = date_to
+
+        # Check date order
+        if validated_from and validated_to and validated_from > validated_to:
+            flash("Start date must be before end date.", "error")
+            validated_from = None
+            validated_to = None
+    except ValueError:
+        # Invalid date format - silently ignore and show unfiltered
+        validated_from = None
+        validated_to = None
+
+    # Get user data
+    user = get_user_by_id(session['user_id'])
+    if user is None:
+        session.clear()
+        return redirect(url_for('login'))
+
+    # Preset date calculations
+    today = datetime.today().date()
+    # This month
+    this_month_start = today.replace(day=1)
+    this_month_end = today
+    # Last 3 months
+    three_months_ago = this_month_start - timedelta(days=90)
+    # Last 6 months
+    six_months_ago = this_month_start - timedelta(days=180)
+
+    # Get filtered data
+    summary_stats = get_summary_stats(session['user_id'], validated_from, validated_to)
+    transactions = get_recent_transactions(session['user_id'], 10, validated_from, validated_to)
+    category_breakdown = get_category_breakdown(session['user_id'], validated_from, validated_to)
+
     return render_template('profile.html',
                            user=user,
                            summary_stats=summary_stats,
                            transactions=transactions,
-                           category_breakdown=category_breakdown)
+                           category_breakdown=category_breakdown,
+                           date_from=validated_from,
+                           date_to=validated_to,
+                           preset_this_month={'from': this_month_start.isoformat(), 'to': this_month_end.isoformat()},
+                           preset_3_months={'from': three_months_ago.isoformat(), 'to': today.isoformat()},
+                           preset_6_months={'from': six_months_ago.isoformat(), 'to': today.isoformat()})
 
 
 @app.route("/expenses/add")
