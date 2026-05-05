@@ -200,8 +200,57 @@
     color: var(--ink-muted);
 }
 
+/* Filter Bar Styles */
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+.filter-btn {
+    padding: 0.4rem 0.8rem;
+    background: var(--border);
+    color: var(--ink);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    font-size: 0.85rem;
+}
+.filter-btn.active {
+    background: var(--accent);
+    color: var(--paper);
+}
+.custom-filter-form {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+.custom-filter-form label {
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+}
+.custom-filter-form input {
+    padding: 0.2rem 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--paper);
+    color: var(--ink);
+}
+.custom-filter-form .apply-btn {
+    padding: 0.3rem 0.6rem;
+    background: var(--accent);
+    color: var(--paper);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
 /* Responsive */
 @media (max-width: 900px) {
     .profile-card { flex-direction: column; text-align: center; }
     .stats-row { grid-template-columns: 1fr; }
+    .filter-bar { flex-direction: column; align-items: stretch; }
+    .custom-filter-form { margin-left: 0; }
 }
