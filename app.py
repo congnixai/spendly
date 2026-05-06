@@ -6,6 +6,7 @@ from database.queries import (
     get_summary_stats,
     get_recent_transactions,
     get_category_breakdown,
+    insert_expense,
 )
 from datetime import datetime, timedelta
 
@@ -168,9 +169,66 @@ def profile():
                            preset_6_months={'from': six_months_ago.isoformat(), 'to': today.isoformat()})
 
 
-@app.route("/expenses/add")
+@app.route("/expenses/add", methods=["GET", "POST"])
 def add_expense():
-    return "Add expense — coming in Step 7"
+    if not session.get('user_id'):
+        return redirect(url_for("login"))
+
+    if request.method == "GET":
+        return render_template("add_expense.html")
+
+    elif request.method == "POST":
+        # Get form data
+        amount_str = request.form.get("amount", "").strip()
+        category = request.form.get("category", "").strip()
+        date_str = request.form.get("date", "").strip()
+        description = request.form.get("description", "").strip()
+
+        # Fixed categories
+        valid_categories = ["Food", "Transport", "Bills", "Health", "Entertainment", "Shopping", "Other"]
+
+        errors = []
+
+        # Validate amount
+        try:
+            amount = float(amount_str)
+            if amount <= 0:
+                errors.append("Amount must be greater than 0.")
+        except ValueError:
+            errors.append("Amount must be a valid number.")
+
+        # Validate category
+        if category not in valid_categories:
+            errors.append("Please select a valid category.")
+
+        # Validate date
+        try:
+            from datetime import datetime
+            datetime.strptime(date_str, "%Y-%m-%d")
+        except (ValueError, TypeError):
+            errors.append("Date must be a valid date in YYYY-MM-DD format.")
+
+        if errors:
+            for error in errors:
+                flash(error, "error")
+            return render_template("add_expense.html",
+                                   amount=amount_str,
+                                   category=category,
+                                   date=date_str,
+                                   description=description)
+
+        # Insert the expense
+        try:
+            expense_id = insert_expense(session["user_id"], amount, category, date_str, description)
+            flash("Expense added successfully!", "success")
+            return redirect(url_for("profile"))
+        except Exception as e:
+            flash(f"Failed to add expense: {str(e)}", "error")
+            return render_template("add_expense.html",
+                                   amount=amount_str,
+                                   category=category,
+                                   date=date_str,
+                                   description=description)
 
 
 @app.route("/expenses/<int:id>/edit")

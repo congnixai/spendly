@@ -1,0 +1,61 @@
+:root {
+  --primary-color: var(--accent);
+  --error-color: var(--danger);
+  --success-color: var(--accent-2-light);
+  --text-primary: var(--ink);
+}
+
+.expense-form {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: var(--paper-card);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.06);
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--ink-muted);
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: var(--primary-color);
+}
+
+.flash-messages {
+  margin-bottom: 2rem;
+  list-style: none;
+  padding-left: 0;
+}
+
+.flash-messages li {
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.5rem;
+}
+
+.flash-error {
+  background: var(--error-color);
+  color: var(--paper);
+}
+
+.flash-success {
+  background: var(--success-color);
+  color: var(--ink);
+}
