@@ -150,3 +150,23 @@ def get_category_breakdown(user_id, date_from=None, date_to=None):
         return categories
     finally:
         conn.close()
+
+
+def insert_expense(user_id, amount, category, date, description=None):
+    """Insert a new expense and return its ID.
+    Raises sqlite3.IntegrityError if invalid user_id or constraint violation.
+    """
+    conn = get_db()
+    try:
+        # If description is empty string, store as NULL
+        desc_value = description if description and description.strip() else None
+
+        cur = conn.execute(
+            """INSERT INTO expenses (user_id, amount, category, date, description)
+               VALUES (?, ?, ?, ?, ?)""",
+            (user_id, amount, category, date, desc_value)
+        )
+        conn.commit()
+        return cur.lastrowid
+    finally:
+        conn.close()
